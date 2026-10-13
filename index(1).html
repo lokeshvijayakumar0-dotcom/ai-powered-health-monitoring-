@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARISE HMS – Health Dashboard</title>
+<style>
+:root{--bg:#060b14;--card:#0f1a2b;--line:#1d2b40;--tx:#e6edf7;--mut:#8ea3bf;--cy:#22d3ee;--em:#34d399;--rose:#fb7185;--amb:#fbbf24;--vio:#a78bfa}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(1200px 600px at 10% -10%,#0d2338,transparent),var(--bg);color:var(--tx);font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Tamil",sans-serif}
+header{position:sticky;top:0;z-index:10;background:rgba(6,11,20,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.wrap{max-width:1200px;margin:auto;padding:0 20px}
+.bar{display:flex;align-items:center;gap:16px;height:64px}
+.brand{font-weight:800;font-size:18px;display:flex;align-items:center;gap:10px;white-space:nowrap}
+.logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--cy),var(--em));display:grid;place-items:center;color:#031018;font-weight:900}
+nav{display:flex;gap:4px;overflow-x:auto;margin-left:auto}
+nav button{background:none;border:1px solid transparent;color:var(--mut);padding:8px 12px;border-radius:10px;cursor:pointer;font:inherit;font-weight:600;white-space:nowrap}
+nav button.on{background:var(--card);border-color:var(--line);color:#fff}
+.lang,.logout{background:var(--card);border:1px solid var(--line);color:var(--cy);padding:7px 12px;border-radius:10px;cursor:pointer;font:inherit;font-weight:700;white-space:nowrap}
+.logout{color:var(--mut)}
+main{padding:24px 0 40px}
+.tab{display:none}.tab.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px}
+.grid{display:grid;gap:16px;margin-bottom:16px}
+.g4{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.g2{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+.lbl{color:var(--mut);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.big{font-size:36px;font-weight:800;font-family:ui-monospace,Menlo,monospace;margin:6px 0 2px}
+.sub{color:var(--mut);font-size:12px}
+.ok{color:var(--em)}.warn{color:var(--amb)}.bad{color:var(--rose)}
+.btn{background:linear-gradient(135deg,var(--cy),var(--em));color:#031018;border:0;border-radius:12px;padding:10px 16px;font-weight:700;cursor:pointer;font:inherit}
+.btn.ghost{background:transparent;color:var(--tx);border:1px solid var(--line)}
+.btn.full{width:100%;margin-top:8px}
+canvas{width:100%;height:160px;display:block}
+.chat{height:340px;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:4px}
+.msg{max-width:85%;padding:10px 14px;border-radius:14px;white-space:pre-wrap}
+.me{align-self:flex-end;background:#134e4a}.bot{align-self:flex-start;background:#15233a;border:1px solid var(--line)}
+.row{display:flex;gap:8px;margin-top:12px}
+input[type=text],input[type=email],input[type=password]{flex:1;background:#081220;border:1px solid var(--line);color:var(--tx);border-radius:12px;padding:10px 12px;font:inherit;min-width:0;width:100%}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{background:#081220;border:1px solid var(--line);color:var(--mut);border-radius:99px;padding:5px 10px;cursor:pointer;font-size:12px}
+.drop{border:2px dashed var(--line);border-radius:16px;padding:24px;text-align:center;color:var(--mut);cursor:pointer;margin-top:12px}
+.drop:hover{border-color:var(--cy);color:var(--tx)}
+table{width:100%;border-collapse:collapse}
+td,th{padding:9px 6px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--mut);font-size:12px;font-weight:600}
+label.ck{display:flex;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.disc{font-size:12px;color:var(--mut);margin-top:24px;text-align:center}
+.hdr{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+label.fld{display:block;color:var(--mut);font-size:12px;font-weight:600;margin:12px 0 4px}
+
+/* Sign-in page */
+#auth{min-height:100vh;display:none;align-items:center;justify-content:center;padding:24px}
+.authBox{width:100%;max-width:400px}
+.authTabs{display:flex;gap:6px;margin:16px 0 4px;background:#081220;border:1px solid var(--line);border-radius:12px;padding:4px}
+.authTabs button{flex:1;background:none;border:0;color:var(--mut);padding:9px;border-radius:9px;cursor:pointer;font:inherit;font-weight:700}
+.authTabs button.on{background:var(--card);color:#fff}
+.err{color:var(--rose);font-size:13px;min-height:18px;margin-top:10px}
+.note{font-size:12px;color:var(--mut);margin-top:14px}
+
+#app{display:none}
+@media print{
+  body *{visibility:hidden}
+  #tab-doctor,#tab-doctor *{visibility:visible}
+  #tab-doctor{position:absolute;left:0;top:0;width:100%;display:block!important}
+  #tab-doctor .noprint{display:none!important}
+  body{background:#fff;color:#000}
+  .card{background:#fff;color:#000;border:1px solid #bbb}
+  td,th,.sub,.lbl{color:#333;border-color:#bbb}
+}
+</style>
+</head>
+<body>
+
+<!-- SIGN-IN PAGE -->
+<section id="auth">
+  <div class="authBox">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="brand"><div class="logo">♥</div>ARISE <span style="color:var(--em)">HMS</span></div>
+      <button class="lang" id="langBtnAuth">தமிழ்</button>
+    </div>
+    <div class="card" style="margin-top:20px">
+      <h1 style="margin:0;font-size:22px" data-i18n="auth_title">Welcome to ARISE HMS</h1>
+      <p class="sub" style="margin:4px 0 0" data-i18n="auth_sub">Sign in to see your health dashboard.</p>
+
+      <div class="authTabs">
+        <button id="tabSignin" class="on" onclick="showAuth('signin')" data-i18n="a_signin">Sign in</button>
+        <button id="tabSignup" onclick="showAuth('signup')" data-i18n="a_signup">Create account</button>
+      </div>
+
+      <!-- Sign in form -->
+      <form id="formSignin" onsubmit="return doSignin(event)">
+        <label class="fld" data-i18n="f_email">Email</label>
+        <input type="email" id="siEmail" required autocomplete="email" data-i18n-ph="ph_email" placeholder="you@example.com">
+        <label class="fld" data-i18n="f_pw">Password</label>
+        <input type="password" id="siPw" required autocomplete="current-password" data-i18n-ph="ph_pw" placeholder="••••••••">
+        <div class="err" id="siErr"></div>
+        <button class="btn full" type="submit" data-i18n="a_signin_btn">Sign in</button>
+      </form>
+
+      <!-- Create account form -->
+      <form id="formSignup" style="display:none" onsubmit="return doSignup(event)">
+        <label class="fld" data-i18n="f_name">Full name</label>
+        <input type="text" id="suName" required autocomplete="name" data-i18n-ph="ph_name" placeholder="Your name">
+        <label class="fld" data-i18n="f_email">Email</label>
+        <input type="email" id="suEmail" required autocomplete="email" data-i18n-ph="ph_email" placeholder="you@example.com">
+        <label class="fld" data-i18n="f_pw">Password</label>
+        <input type="password" id="suPw" required minlength="8" autocomplete="new-password" data-i18n-ph="ph_pw8" placeholder="At least 8 characters">
+        <div class="err" id="suErr"></div>
+        <button class="btn full" type="submit" data-i18n="a_signup_btn">Create account</button>
+      </form>
+
+      <p class="note" data-i18n="auth_note">Demo sign-in: accounts are stored in this browser only. Before real patient use, sign-in must run on a secure server.</p>
+    </div>
+  </div>
+</section>
+
+<!-- APP -->
+<div id="app">
+<header>
+  <div class="wrap bar">
+    <div class="brand"><div class="logo">♥</div>ARISE <span style="color:var(--em)">HMS</span></div>
+    <nav id="nav">
+      <button data-tab="overview" class="on" data-i18n="t_over">Overview</button>
+      <button data-tab="wrist" data-i18n="t_wrist">Wristband</button>
+      <button data-tab="assist" data-i18n="t_assist">Health Assistant</button>
+      <button data-tab="labs" data-i18n="t_labs">Labs</button>
+      <button data-tab="doctor" data-i18n="t_doc">Doctor Prep</button>
+      <button data-tab="meds" data-i18n="t_meds">Meds</button>
+    </nav>
+    <button class="lang" id="langBtn">தமிழ்</button>
+    <button class="logout" id="logoutBtn" onclick="signOut()" data-i18n="signout">Sign out</button>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- OVERVIEW -->
+  <section class="tab on" id="tab-overview">
+    <div class="card" style="margin-bottom:16px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;align-items:center">
+      <div>
+        <div class="lbl" data-i18n="hub">Health dashboard</div>
+        <h1 style="margin:6px 0 4px;font-size:28px" id="greet"></h1>
+        <p style="margin:0;color:var(--mut);max-width:620px" data-i18n="hero">Your wristband sends skin temperature, estimated glucose and daily steps to your dashboard over WiFi.</p>
+      </div>
+      <button class="btn" onclick="go('wrist')" data-i18n="open">Open wristband data</button>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;border-color:#155e75">
+      <div class="lbl" style="color:var(--cy)" data-i18n="insight_lbl">Today's summary</div>
+      <p style="margin:6px 0 0" id="insight"></p>
+    </div>
+
+    <div class="grid g4">
+      <div class="card"><div class="lbl" data-i18n="temp">Skin temperature</div><div class="big"><span data-bind="temp">98.6</span><span class="sub">°F</span></div><div class="sub" data-i18n="calibrated">Calibrated</div></div>
+      <div class="card"><div class="lbl" data-i18n="glu">Glucose (estimated)</div><div class="big"><span data-bind="glu">104</span><span class="sub">mg/dL</span></div><div class="sub"><span data-i18n="trend_est">Trend estimate</span> · <span id="gluSt" class="ok"></span></div></div>
+      <div class="card"><div class="lbl" data-i18n="steps">Steps today</div><div class="big"><span data-bind="steps">8,452</span></div><div class="sub" data-i18n="goal">Goal 10,000</div></div>
+    </div>
+
+    <div class="grid g2">
+      <div class="card"><div class="lbl" style="margin-bottom:8px" data-i18n="glu7">Glucose (estimated) · last 7 days</div><svg id="sparkGlu" viewBox="0 0 300 90" width="100%" height="110"></svg></div>
+      <div class="card"><div class="lbl" style="margin-bottom:8px" data-i18n="steps7">Steps · last 7 days</div><svg id="sparkSteps" viewBox="0 0 300 90" width="100%" height="110"></svg></div>
+    </div>
+  </section>
+
+  <!-- WRISTBAND -->
+  <section class="tab" id="tab-wrist">
+    <div class="card" style="margin-bottom:16px">
+      <div class="hdr">
+        <div><div class="lbl" data-i18n="sync_lbl">Wristband connection</div><div class="sub" id="syncTxt">● Synced just now</div></div>
+      </div>
+    </div>
+    <div class="grid g4">
+      <div class="card"><div class="lbl" data-i18n="temp">Skin temperature</div><div class="big"><span data-bind="temp">98.6</span></div><div class="sub">°F</div></div>
+      <div class="card"><div class="lbl" data-i18n="glu">Glucose (estimated)</div><div class="big"><span data-bind="glu">104</span></div><div class="sub">mg/dL</div></div>
+      <div class="card"><div class="lbl" data-i18n="steps">Steps today</div><div class="big"><span data-bind="steps">8,452</span></div><div class="sub" data-i18n="goal">Goal 10,000</div></div>
+      <div class="card"><div class="lbl" data-i18n="sleep">Sleep last night</div><div class="big" style="font-size:28px">7h 32m</div><div class="sub" data-i18n="good">Good quality</div></div>
+    </div>
+  </section>
+
+  <!-- HEALTH ASSISTANT -->
+  <section class="tab" id="tab-assist">
+    <div class="grid g2">
+      <div class="card">
+        <div class="lbl" style="margin-bottom:8px" data-i18n="assist_lbl">Health Assistant</div>
+        <div class="chat" id="chat"></div>
+        <div class="chips">
+          <span class="chip" onclick="send(this.textContent)" data-i18n="c1">How many steps have I taken today?</span>
+          <span class="chip" onclick="send(this.textContent)" data-i18n="c2">Explain my HbA1c trend</span>
+          <span class="chip" onclick="send(this.textContent)" data-i18n="c3">Did I sleep well?</span>
+          <span class="chip" onclick="send(this.textContent)" data-i18n="c4">Prepare for my doctor visit</span>
+        </div>
+        <div class="row">
+          <input type="text" id="q" data-i18n-ph="ph_q" placeholder="Ask about your health data…" onkeydown="if(event.key==='Enter')send(this.value)">
+          <button class="btn" onclick="send(document.getElementById('q').value)" data-i18n="send">Send</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="lbl" style="margin-bottom:8px" data-i18n="ctx">Information the assistant uses</div>
+        <table>
+          <tr><td data-i18n="steps">Steps today</td><td data-bind="steps">8,452</td></tr>
+          <tr><td data-i18n="glu">Glucose (estimated)</td><td><span data-bind="glu">104</span> mg/dL</td></tr>
+          <tr><td data-i18n="sleep">Sleep last night</td><td>7h 32m · <span data-i18n="good">Good quality</span></td></tr>
+          <tr><td>HbA1c</td><td>5.5 %</td></tr>
+          <tr><td data-i18n="meds_logged">Medications logged</td><td id="medCount">0 / 3</td></tr>
+        </table>
+        <p class="sub" style="margin-top:14px" data-i18n="assist_note">The assistant explains your data and helps you prepare questions. It does not diagnose or change medication.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- LABS -->
+  <section class="tab" id="tab-labs">
+    <div class="grid g2">
+      <div class="card">
+        <div class="lbl" style="margin-bottom:8px" data-i18n="a1c_lbl">HbA1c trend · target below 5.7 %</div>
+        <svg id="labChart" viewBox="0 0 520 220" width="100%" height="240"></svg>
+      </div>
+      <div class="card">
+        <div class="lbl" data-i18n="upload_lbl">Upload lab report</div>
+        <div class="drop" id="drop" onclick="document.getElementById('file').click()">
+          <div style="font-size:24px">⤒</div>
+          <div data-i18n="drop">Drop a PDF, JPG or PNG here, or click to choose</div>
+          <div class="sub">Max 10 MB</div>
+        </div>
+        <input type="file" id="file" accept=".pdf,.jpg,.jpeg,.png" hidden>
+        <table style="margin-top:14px">
+          <tr><th data-i18n="marker">Marker</th><th data-i18n="result">Result</th><th data-i18n="status">Status</th></tr>
+          <tr><td>HbA1c</td><td>5.5 %</td><td class="ok" data-i18n="inrange">In range</td></tr>
+          <tr><td>LDL</td><td>118 mg/dL</td><td class="warn" data-i18n="border">Borderline</td></tr>
+          <tr><td>Hemoglobin</td><td>13.4 g/dL</td><td class="ok" data-i18n="inrange">In range</td></tr>
+        </table>
+        <div id="uploadLog" class="sub" style="margin-top:8px"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DOCTOR PREP -->
+  <section class="tab" id="tab-doctor">
+    <div class="card">
+      <div class="hdr">
+        <div><div class="lbl" data-i18n="brief_lbl">Visit brief</div><h2 style="margin:4px 0 0" id="briefTitle"></h2><div class="sub" id="briefDate"></div></div>
+        <button class="btn noprint" onclick="window.print()" data-i18n="print">Print / Save as PDF</button>
+      </div>
+      <table>
+        <tr><th data-i18n="measure">Measure</th><th data-i18n="current">Current</th><th data-i18n="notes">Notes</th></tr>
+        <tr><td data-i18n="glu">Glucose (estimated)</td><td><span data-bind="glu">104</span> mg/dL</td><td data-i18n="glu_note">Wristband estimate, confirm with meter</td></tr>
+        <tr><td data-i18n="avg_steps">Average steps (7 days)</td><td>8,358</td><td data-i18n="steps_note">Below 10,000 goal on 3 days</td></tr>
+        <tr><td data-i18n="sleep">Sleep (last night)</td><td>7h 32m</td><td data-i18n="good">Good quality</td></tr>
+        <tr><td>HbA1c</td><td>5.5 %</td><td data-i18n="a1c_note">Down from 6.1 % over 12 months</td></tr>
+      </table>
+      <h3 style="margin:20px 0 4px" data-i18n="q_lbl">Questions to ask</h3>
+      <label class="ck"><input type="checkbox"> <span data-i18n="q1">Should my LDL target change given my latest result?</span></label>
+      <label class="ck"><input type="checkbox"> <span data-i18n="q2">Is my estimated glucose trend worth confirming with a lab test?</span></label>
+      <label class="ck"><input type="checkbox"> <span data-i18n="q3">Is my current activity level right for my goals?</span></label>
+      <label class="ck"><input type="checkbox"> <span data-i18n="q4">Any changes to my routine I should make before the next check?</span></label>
+    </div>
+  </section>
+
+  <!-- MEDS -->
+  <section class="tab" id="tab-meds">
+    <div class="card" style="max-width:640px">
+      <div class="hdr">
+        <div><div class="lbl" data-i18n="routine">Today's routine (sample)</div><div class="sub" id="medProg">0 of 3 done</div></div>
+      </div>
+      <label class="ck"><input type="checkbox" onchange="medToggle()"> <span style="flex:1">Metformin 500 mg</span><span class="sub">8:00 AM</span></label>
+      <label class="ck"><input type="checkbox" onchange="medToggle()"> <span style="flex:1">Vitamin D3 1000 IU</span><span class="sub">9:00 AM</span></label>
+      <label class="ck"><input type="checkbox" onchange="medToggle()"> <span style="flex:1" data-i18n="walk">20-minute evening walk</span><span class="sub">6:30 PM</span></label>
+    </div>
+  </section>
+
+  <p class="disc" data-i18n="disc">ARISE HMS is an informational prototype. It does not provide medical diagnosis or treatment. Wristband glucose values are estimates. In an emergency, call your local emergency number.</p>
+</main>
+</div>
+
+<script>
+/* ===================== LANGUAGE ===================== */
+const T={
+  en:{t_over:"Overview",t_wrist:"Wristband",t_assist:"Health Assistant",t_labs:"Labs",t_doc:"Doctor Prep",t_meds:"Meds",
+      signout:"Sign out",hub:"Health dashboard",hero:"Your wristband sends skin temperature, estimated glucose and daily steps to your dashboard over WiFi.",
+      open:"Open wristband data",insight_lbl:"Today's summary",temp:"Skin temperature",glu:"Glucose (estimated)",steps:"Steps today",
+      trend_est:"Trend estimate",calibrated:"Calibrated",goal:"Goal 10,000",glu7:"Glucose (estimated) · last 7 days",steps7:"Steps · last 7 days",
+      sync_lbl:"Wristband connection",sleep:"Sleep last night",good:"Good quality",assist_lbl:"Health Assistant",
+      c1:"How many steps have I taken today?",c2:"Explain my HbA1c trend",c3:"Did I sleep well?",c4:"Prepare for my doctor visit",
+      send:"Send",ph_q:"Ask about your health data…",ctx:"Information the assistant uses",meds_logged:"Medications logged",
+      assist_note:"The assistant explains your data and helps you prepare questions. It does not diagnose or change medication.",
+      a1c_lbl:"HbA1c trend · target below 5.7 %",upload_lbl:"Upload lab report",drop:"Drop a PDF, JPG or PNG here, or click to choose",
+      marker:"Marker",result:"Result",status:"Status",inrange:"In range",border:"Borderline",
+      brief_lbl:"Visit brief",print:"Print / Save as PDF",measure:"Measure",current:"Current",notes:"Notes",
+      glu_note:"Wristband estimate, confirm with meter",avg_steps:"Average steps (7 days)",steps_note:"Below 10,000 goal on 3 days",
+      a1c_note:"Down from 6.1 % over 12 months",q_lbl:"Questions to ask",
+      q1:"Should my LDL target change given my latest result?",q2:"Is my estimated glucose trend worth confirming with a lab test?",
+      q3:"Is my current activity level right for my goals?",q4:"Any changes to my routine I should make before the next check?",
+      routine:"Today's routine (sample)",walk:"20-minute evening walk",disc:"ARISE HMS is an informational prototype. It does not provide medical diagnosis or treatment. Wristband glucose values are estimates. In an emergency, call your local emergency number.",
+      auth_title:"Welcome to ARISE HMS",auth_sub:"Sign in to see your health dashboard.",a_signin:"Sign in",a_signup:"Create account",
+      f_email:"Email",f_pw:"Password",f_name:"Full name",ph_email:"you@example.com",ph_pw:"••••••••",ph_pw8:"At least 8 characters",ph_name:"Your name",
+      a_signin_btn:"Sign in",a_signup_btn:"Create account",
+      auth_note:"Demo sign-in: accounts are stored in this browser only. Before real patient use, sign-in must run on a secure server.",
+      e_bad:"Email or password is incorrect.",e_exists:"An account with this email already exists.",e_short:"Password must be at least 8 characters.",e_nouser:"Please sign in first.",
+      hi:"Hi",intro:"I can explain your wristband and lab data, sleep and routine, or help you prepare for a doctor visit. Ask me anything, or tap a suggestion below.",
+      greet_m:"Good morning",greet_a:"Good afternoon",greet_e:"Good evening"},
+  ta:{t_over:"கண்ணோட்டம்",t_wrist:"மணிக்கட்டு",t_assist:"சுகாதார உதவியாளர்",t_labs:"ஆய்வகம்",t_doc:"மருத்துவர் தயாரிப்பு",t_meds:"மருந்துகள்",
+      signout:"வெளியேறு",hub:"சுகாதார டாஷ்போர்டு",hero:"உங்கள் வளையல் உடல் வெப்பம், மதிப்பிடப்பட்ட குளுக்கோஸ் மற்றும் தினசரி படிகளை WiFi வழியாக அனுப்புகிறது.",
+      open:"மணிக்கட்டு தரவைப் பார்",insight_lbl:"இன்றைய சுருக்கம்",temp:"உடல் வெப்பம்",glu:"குளுக்கோஸ் (மதிப்பீடு)",steps:"இன்றைய படிகள்",
+      trend_est:"போக்கு மதிப்பீடு",calibrated:"அளவீடு செய்யப்பட்டது",goal:"இலக்கு 10,000",glu7:"குளுக்கோஸ் (மதிப்பீடு) · கடந்த 7 நாட்கள்",steps7:"படிகள் · கடந்த 7 நாட்கள்",
+      sync_lbl:"மணிக்கட்டு இணைப்பு",sleep:"நேற்றிரவு தூக்கம்",good:"நல்ல தரம்",assist_lbl:"சுகாதார உதவியாளர்",
+      c1:"இன்று எத்தனை படிகள் நடந்தேன்?",c2:"என் HbA1c போக்கை விளக்கு",c3:"நான் நன்றாக தூங்கினேனா?",c4:"மருத்துவர் சந்திப்புக்கு தயார் செய்",
+      send:"அனுப்பு",ph_q:"உங்கள் சுகாதார தரவைப் பற்றி கேளுங்கள்…",ctx:"உதவியாளர் பயன்படுத்தும் தகவல்",meds_logged:"பதிவு செய்யப்பட்ட மருந்துகள்",
+      assist_note:"உதவியாளர் உங்கள் தரவை விளக்கி கேள்விகளைத் தயார் செய்ய உதவுகிறது. இது நோயறிதல் செய்யாது அல்லது மருந்தை மாற்றாது.",
+      a1c_lbl:"HbA1c போக்கு · இலக்கு 5.7 %க்குக் கீழ்",upload_lbl:"ஆய்வக அறிக்கையைப் பதிவேற்று",drop:"PDF, JPG அல்லது PNG-ஐ இங்கே விடுங்கள், அல்லது தேர்ந்தெடுக்க கிளிக் செய்யுங்கள்",
+      marker:"குறியீடு",result:"முடிவு",status:"நிலை",inrange:"வரம்பிற்குள்",border:"எல்லைக்கோடு",
+      brief_lbl:"சந்திப்புச் சுருக்கம்",print:"அச்சிடு / PDF சேமி",measure:"அளவீடு",current:"தற்போதைய",notes:"குறிப்புகள்",
+      glu_note:"கைக்கடிகார மதிப்பீடு, கருவியுடன் உறுதிப்படுத்தவும்",avg_steps:"சராசரி படிகள் (7 நாட்கள்)",steps_note:"3 நாட்கள் 10,000 இலக்குக்குக் கீழ்",
+      a1c_note:"12 மாதங்களில் 6.1 %இலிருந்து குறைவு",q_lbl:"கேட்க வேண்டிய கேள்விகள்",
+      q1:"என் சமீபத்திய முடிவின்படி LDL இலக்கு மாற வேண்டுமா?",q2:"மதிப்பிடப்பட்ட குளுக்கோஸ் போக்கை ஆய்வக சோதனையால் உறுதிப்படுத்த வேண்டுமா?",
+      q3:"என் தற்போதைய செயல்பாட்டு நிலை என் இலக்குகளுக்கு ஏற்றதா?",q4:"அடுத்த பரிசோதனைக்கு முன் என் வழக்கத்தில் ஏதேனும் மாற்றம் செய்ய வேண்டுமா?",
+      routine:"இன்றைய வழக்கம் (மாதிரி)",walk:"20 நிமிட மாலை நடை",disc:"ARISE HMS ஒரு தகவல் முன்மாதிரி. இது மருத்துவ நோயறிதல் அல்லது சிகிச்சையை வழங்காது. மணிக்கட்டு குளுக்கோஸ் மதிப்புகள் மதிப்பீடுகள். அவசரத்தில், உங்கள் உள்ளூர் அவசர எண்ணை அழைக்கவும்.",
+      auth_title:"ARISE HMS-க்கு வரவேற்கிறோம்",auth_sub:"உங்கள் சுகாதார டாஷ்போர்டைக் காண உள்நுழையவும்.",a_signin:"உள்நுழை",a_signup:"கணக்கு உருவாக்கு",
+      f_email:"மின்னஞ்சல்",f_pw:"கடவுச்சொல்",f_name:"முழுப் பெயர்",ph_email:"you@example.com",ph_pw:"••••••••",ph_pw8:"குறைந்தது 8 எழுத்துகள்",ph_name:"உங்கள் பெயர்",
+      a_signin_btn:"உள்நுழை",a_signup_btn:"கணக்கு உருவாக்கு",
+      auth_note:"டெமோ உள்நுழைவு: கணக்குகள் இந்த உலாவியில் மட்டுமே சேமிக்கப்படும். உண்மையான நோயாளி பயன்பாட்டிற்கு முன், பாதுகாப்பான சர்வரில் உள்நுழைவு இருக்க வேண்டும்.",
+      e_bad:"மின்னஞ்சல் அல்லது கடவுச்சொல் தவறு.",e_exists:"இந்த மின்னஞ்சலில் ஏற்கனவே ஒரு கணக்கு உள்ளது.",e_short:"கடவுச்சொல் குறைந்தது 8 எழுத்துகளாக இருக்க வேண்டும்.",e_nouser:"முதலில் உள்நுழையவும்.",
+      hi:"வணக்கம்",intro:"உங்கள் மணிக்கட்டு மற்றும் ஆய்வகத் தரவு, தூக்கம் மற்றும் வழக்கத்தை விளக்கலாம், அல்லது மருத்துவர் சந்திப்புக்குத் தயார் செய்ய உதவலாம். எதையும் கேளுங்கள்.",
+      greet_m:"காலை வணக்கம்",greet_a:"மதிய வணக்கம்",greet_e:"மாலை வணக்கம்"}
+};
+let lang="en", user=null, started=false;
+const tr=(k)=>T[lang][k]||T.en[k]||"";
+
+function applyLang(){
+  document.querySelectorAll("[data-i18n]").forEach(el=>{el.textContent=tr(el.dataset.i18n)||el.textContent;});
+  document.querySelectorAll("[data-i18n-ph]").forEach(el=>{el.placeholder=tr(el.dataset.i18nPh);});
+  ["langBtn","langBtnAuth"].forEach(id=>document.getElementById(id).textContent = lang==="en" ? "தமிழ்" : "English");
+  document.documentElement.lang = lang;
+  setGreeting();
+}
+function toggleLang(){ lang = lang==="en" ? "ta" : "en"; applyLang(); }
+document.getElementById("langBtn").onclick=toggleLang;
+document.getElementById("langBtnAuth").onclick=toggleLang;
+
+function setGreeting(){
+  if(!user) return;
+  const h=new Date().getHours();
+  const part = h<12 ? tr("greet_m") : h<17 ? tr("greet_a") : tr("greet_e");
+  document.getElementById("greet").textContent = (lang==="en" ? part+", " : part+", ") + user.name;
+  document.getElementById("briefTitle").textContent = user.name + (lang==="en" ? " · Doctor visit summary" : " · மருத்துவர் வருகைச் சுருக்கம்");
+}
+
+/* ===================== ACCOUNTS (demo, browser-only) ===================== */
+const getUsers=()=>JSON.parse(localStorage.getItem("arise_users")||"{}");
+const saveUsers=u=>localStorage.setItem("arise_users",JSON.stringify(u));
+async function sha(s){
+  const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));
+  return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");
+}
+function showAuth(which){
+  const si = which==="signin";
+  document.getElementById("formSignin").style.display = si?"block":"none";
+  document.getElementById("formSignup").style.display = si?"none":"block";
+  document.getElementById("tabSignin").classList.toggle("on",si);
+  document.getElementById("tabSignup").classList.toggle("on",!si);
+}
+async function doSignin(e){
+  e.preventDefault();
+  const email=document.getElementById("siEmail").value.trim().toLowerCase();
+  const pw=document.getElementById("siPw").value;
+  const users=getUsers(), u=users[email];
+  if(!u || u.hash!==await sha(pw)){ document.getElementById("siErr").textContent=tr("e_bad"); return false; }
+  sessionStorage.setItem("arise_session",email);
+  startApp(email,u.name);
+  return false;
+}
+async function doSignup(e){
+  e.preventDefault();
+  const name=document.getElementById("suName").value.trim();
+  const email=document.getElementById("suEmail").value.trim().toLowerCase();
+  const pw=document.getElementById("suPw").value;
+  const err=document.getElementById("suErr");
+  if(pw.length<8){ err.textContent=tr("e_short"); return false; }
+  const users=getUsers();
+  if(users[email]){ err.textContent=tr("e_exists"); return false; }
+  users[email]={name,hash:await sha(pw)};
+  saveUsers(users);
+  sessionStorage.setItem("arise_session",email);
+  startApp(email,name);
+  return false;
+}
+function signOut(){
+  sessionStorage.removeItem("arise_session");
+  location.reload();
+}
+
+/* ===================== APP START ===================== */
+function startApp(email,name){
+  user={email,name};
+  document.getElementById("auth").style.display="none";
+  document.getElementById("app").style.display="block";
+  if(!started){
+    started=true;
+    render();
+    setInterval(tick,1000);
+    drawSparks(); drawLabs();
+    add("bot", tr("hi")+" "+name+". "+tr("intro"));
+  }
+  applyLang();
+}
+const savedEmail=sessionStorage.getItem("arise_session");
+const savedUser=savedEmail && getUsers()[savedEmail];
+if(savedUser){ startApp(savedEmail, savedUser.name); }
+else { document.getElementById("auth").style.display="flex"; applyLang(); }
+
+/* ===================== NAVIGATION ===================== */
+function go(name){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t.id==="tab-"+name));
+  document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("on",b.dataset.tab===name));
+  if(name==="labs")drawLabs();
+  if(name==="doctor"){ document.getElementById("briefDate").textContent=(lang==="en"?"Generated ":"உருவாக்கப்பட்டது ")+new Date().toLocaleDateString(); setGreeting(); }
+}
+document.querySelectorAll("#nav button").forEach(b=>b.onclick=()=>go(b.dataset.tab));
+
+/* ===================== LIVE DATA ===================== */
+const S={temp:98.6,glu:104,steps:8452};
+let lastSync=Date.now();
+const fmt={temp:v=>v.toFixed(1),glu:v=>Math.round(v),steps:v=>v.toLocaleString()};
+const rnd=(a,b)=>a+Math.random()*(b-a);
+
+function tick(){
+  S.temp = 98.5+rnd(-0.2,0.2);
+  S.glu = Math.max(80,Math.min(140,S.glu+rnd(-0.8,0.8)));
+  if(Math.random()<0.25) S.steps += 1;
+  lastSync = Date.now();
+  render();
+}
+function render(){
+  document.querySelectorAll("[data-bind]").forEach(el=>{el.textContent=fmt[el.dataset.bind](S[el.dataset.bind]);});
+  const gluOk = S.glu>=70 && S.glu<=140;
+  setSt("gluSt",gluOk?tr("status_optimal")||"Optimal":"Check",gluOk?"ok":"warn");
+  const left = Math.max(0,10000-S.steps);
+  document.getElementById("insight").textContent = lang==="en"
+    ? `You have taken ${S.steps.toLocaleString()} steps today, ${left.toLocaleString()} short of your 10,000 goal. A 10-minute walk after your next meal can help close the gap. Your sleep last night was good.`
+    : `இன்று ${S.steps.toLocaleString()} படிகள் நடந்துள்ளீர்கள், உங்கள் 10,000 இலக்குக்கு ${left.toLocaleString()} குறைவு. அடுத்த உணவுக்குப் பிறகு 10 நிமிட நடை உதவும். நேற்றிரவு தூக்கம் நன்றாக இருந்தது.`;
+  const age=Math.round((Date.now()-lastSync)/1000);
+  document.getElementById("syncTxt").textContent = "● "+(lang==="en"?"Synced ":"ஒத்திசைக்கப்பட்டது ")+(age<2?(lang==="en"?"just now":"இப்போது"):age+"s");
+  document.getElementById("syncTxt").style.color="var(--em)";
+}
+function setSt(id,txt,cls){const e=document.getElementById(id);e.textContent=txt;e.className=cls;}
+
+/* ===================== CHARTS ===================== */
+function spark(id,data,color){
+  const W=300,H=90,min=Math.min(...data)*0.95,max=Math.max(...data)*1.05;
+  const pts=data.map((v,i)=>[i*(W-20)/(data.length-1)+10, H-10-(v-min)/(max-min)*(H-20)]);
+  const line=pts.map(p=>p.join(",")).join(" ");
+  const dots=pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="${color}"/>`).join("");
+  document.getElementById(id).innerHTML=`<polyline points="${line}" fill="none" stroke="${color}" stroke-width="2.5"/>${dots}`;
+}
+function drawSparks(){
+  spark("sparkGlu",[100,104,98,110,102,104,104],"#22d3ee");
+  spark("sparkSteps",[8452,7230,9420,6890,10245,7890,8452],"#34d399");
+}
+function drawLabs(){
+  const vals=[6.1,5.9,5.8,5.6,5.5], labels=["Oct 25","Jan","Apr","Jul","Oct 26"];
+  const W=520,H=220,min=5,max=6.5, X=i=>40+i*(W-80)/4, Y=v=>H-30-(v-min)/(max-min)*(H-50);
+  const pts=vals.map((v,i)=>[X(i),Y(v)]);
+  let s=`<line x1="40" x2="${W-40}" y1="${Y(5.7)}" y2="${Y(5.7)}" stroke="#34d399" stroke-dasharray="6 6" opacity=".6"/>`;
+  s+=`<text x="${W-40}" y="${Y(5.7)-6}" fill="#34d399" font-size="12" text-anchor="end">Target 5.7%</text>`;
+  s+=`<polyline points="${pts.map(p=>p.join(",")).join(" ")}" fill="none" stroke="#22d3ee" stroke-width="3"/>`;
+  pts.forEach((p,i)=>{
+    s+=`<circle cx="${p[0]}" cy="${p[1]}" r="5" fill="#22d3ee"/>`;
+    s+=`<text x="${p[0]}" y="${p[1]-12}" fill="#e6edf7" font-size="12" text-anchor="middle">${vals[i]}%</text>`;
+    s+=`<text x="${p[0]}" y="${H-8}" fill="#8ea3bf" font-size="11" text-anchor="middle">${labels[i]}</text>`;
+  });
+  document.getElementById("labChart").innerHTML=s;
+}
+
+/* ===================== HEALTH ASSISTANT ===================== */
+const chat=document.getElementById("chat");
+function add(role,text){
+  const d=document.createElement("div");
+  d.className="msg "+(role==="me"?"me":"bot");
+  d.textContent=text; chat.appendChild(d); chat.scrollTop=chat.scrollHeight;
+}
+function reply(q){
+  if(/chest|breath|faint|dizz|emergenc|ambulance/i.test(q))
+    return "If you have chest pain, trouble breathing, fainting or severe dizziness, call your local emergency number now. Do not wait for this app.";
+  if(/step|walk|move|activ/i.test(q))
+    return `You have taken ${Math.round(S.steps).toLocaleString()} steps today against a goal of 10,000. A short walk after meals is an easy way to add more.`;
+  if(/sugar|glucose|a1c|diabet/i.test(q))
+    return `Estimated glucose is ${Math.round(S.glu)} mg/dL from the wristband. Your lab HbA1c fell from 6.1 % to 5.5 % over 12 months. Confirm any reading you are concerned about with a meter or lab test.`;
+  if(/sleep|rest|tired/i.test(q))
+    return "You slept 7h 32m last night, with good quality. Consistent bedtimes usually help most, so keep that in mind for tonight.";
+  if(/lab|report|result|ldl/i.test(q))
+    return "Your latest panel shows HbA1c 5.5 % (in range), hemoglobin 13.4 g/dL (in range) and LDL 118 mg/dL (borderline). You can upload a new report in the Labs tab.";
+  if(/doctor|visit|appointment|prep/i.test(q)){
+    go("doctor");
+    return "I've prepared a visit brief in the Doctor Prep tab, with your current measures, trends and questions. You can print it or save it as a PDF.";
+  }
+  return "I can explain your wristband data, lab trends, sleep and routine, or prepare you for a doctor visit. What would you like to look at?";
+}
+function send(text){
+  text=(text||"").trim(); if(!text) return;
+  add("me",text); document.getElementById("q").value="";
+  setTimeout(()=>add("bot",reply(text)),350);
+}
+
+/* ===================== LABS UPLOAD ===================== */
+const drop=document.getElementById("drop"), file=document.getElementById("file");
+function handleFile(f){
+  const ok=["application/pdf","image/jpeg","image/png"].includes(f.type);
+  if(!ok){document.getElementById("uploadLog").textContent="Please choose a PDF, JPG or PNG file.";return;}
+  if(f.size>10*1024*1024){document.getElementById("uploadLog").textContent="File is larger than 10 MB.";return;}
+  document.getElementById("uploadLog").textContent=`"${f.name}" received. Demo mode: in the full product, markers are extracted and added to this table automatically.`;
+}
+file.onchange=e=>{if(e.target.files[0])handleFile(e.target.files[0]);};
+["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.style.borderColor="var(--cy)";}));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.style.borderColor="";}));
+drop.addEventListener("drop",e=>{if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0]);});
+
+/* ===================== MEDS ===================== */
+function medToggle(){
+  const boxes=[...document.querySelectorAll("#tab-meds input[type=checkbox]")];
+  const done=boxes.filter(b=>b.checked).length;
+  document.getElementById("medProg").textContent=`${done} of ${boxes.length} done`;
+  document.getElementById("medCount").textContent=`${done} / ${boxes.length}`;
+}
+</script>
+</body>
+</html>
